@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1006942256842",
+    "project_id": "ticut-fe804",
+    "storage_bucket": "ticut-fe804.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006942256842:android:69301385f556a4e4b37e33",
+        "android_client_info": {
+          "package_name": "com.ticut"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1006942256842-c5teuoo02btrem8js10t48qo7b1r216c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZ7rLlEGCRarVAnDlBUi66LF8JHMHZOgc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1006942256842-c5teuoo02btrem8js10t48qo7b1r216c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
