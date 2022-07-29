@@ -2,16 +2,14 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import DatePicker from 'react-native-date-picker';
 
-export default function DatesPicker({ date, setOpen, setDate, open }) {
+export default function DatesPicker({ date, setOpen, open, onConfirm }) {
   return (
     <DatePicker
         modal
         open={open}
         date={date}
-        onConfirm={(date) => {
-          setOpen(false)
-          setDate(date)
-        }}
+        mode={'date'}
+        onConfirm={onConfirm}
         onCancel={() => {
           setOpen(false)
         }}

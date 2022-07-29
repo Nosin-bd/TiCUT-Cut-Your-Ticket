@@ -1,20 +1,74 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { StyleSheet, Dimensions } from 'react-native';
-import { Image, Heading, Container, CheckIcon, FormControl, Select, WarningOutlineIcon, Button, View, IconButton, Flex } from 'native-base';
+import { Image, Heading, Container, CheckIcon, FormControl, Select, WarningOutlineIcon, Button, View, Stack, Box,Text, HStack, Spinner, Input, Badge} from 'native-base';
 // @ts-ignore
 import busImg from '../assets/images/Transport.jpg';
 import { useState } from 'react';
-import { HStack, Input } from 'native-base';
 import DatesPicker from '../components/DatesPicker';
 import { useNavigation } from '@react-navigation/native';
+import firestore from '@react-native-firebase/firestore';
+import moment from 'moment';
+import { useToast } from 'native-base';
 
 export default function HomeScreen() {
   const win = Dimensions.get('window');
-  const ratio = win.width / 200;
+  const [trips, setTrips] = useState([]);
   const [date, setDate] = useState('');
   const [open, setOpen] = useState(false);
-  
+  const [routes, setRoutes] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState('');
+
+  const toast = useToast();
   const navigation = useNavigation();
+
+  useEffect(() => {
+    async function fetchRoutes() {
+      const data = []
+      const querySnapshot = await firestore().collection("routes").get();
+      const snapshot = querySnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+      snapshot.forEach((doc) => {
+          data.push(doc);
+      });
+
+      setRoutes(data);
+    }
+
+    fetchRoutes();
+  }, []);
+
+  const onConfirmDate = (d) => {
+    setOpen(false);
+    const formatDate = moment(d).format("DD-MM-YYYY");
+    setDate(formatDate);
+    selectedRouteId.length ? fetchTrips(selectedRouteId, formatDate) : toast.show({description: "Please select journey route!"});
+  }
+
+  const changeRoute = (val) => {
+    setSelectedRouteId(val);
+    date.length > 1 ? fetchTrips(val, date) : toast.show({description: "Please select journey date!"}); 
+  }
+
+  async function fetchTrips(routeId, currentDate) {
+      setSearchLoading(true);
+      setTrips([]);
+      const querySnapshot = await firestore().collection("trips").where('date', '==', currentDate).get();
+      var snapshot = querySnapshot.docs.reduce(function(filtered, trip) {
+        let returnObj = {
+          id: trip.id, ...trip.data()
+        }
+        let checkRoute = returnObj.routes.some((r) => {
+          return r.id == routeId;
+        })
+        if(checkRoute) {
+           filtered.push(returnObj);
+        }
+        return filtered;
+      }, []);
+      setTrips(snapshot);
+      setSearchLoading(false);
+  }
+
 
   return (
     <View style={styles.container}>
@@ -24,48 +78,117 @@ export default function HomeScreen() {
         }} />
       <Heading py={3} mt={2} color={'theme.500'}>Book Your Ticket</Heading>
       <Container w={"95%"}>
-          <FormControl isRequired>
-            <Select accessibilityLabel="Select Destination Root" placeholder="Select Destination Root" _selectedItem={{
-            bg: "theme.300",
-            endIcon: <CheckIcon size={5} />
-          }} mt="1">
-              <Select.Item label="BAUET To Rajshahi" value="bauetToRaj" />
-              <Select.Item label="Rajshahi - BAUET" value="RajToBauet" />
-              <Select.Item label="BAUET to Natore" value="bauetToNatore" />
-            </Select>
-            <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
-              Please select your location and destination root!
-            </FormControl.ErrorMessage>
-          </FormControl>
-
           <FormControl isRequired py={3}>
             <HStack>
-              <Input flex={1} placeholder="Date" value={typeof date === 'string' ? '' :  date.toDateString()} isDisabled={true} />
+              <Input flex={1} placeholder="Select Journey Date" value={date} isDisabled={true} />
               <Button variant={'outline'} size={'sm'} colorScheme='amber' onPress={() => setOpen(true)}  >Select date</Button>
-              <DatesPicker date={new Date()} setDate={setDate} setOpen={setOpen} open={open} />
+              <DatesPicker date={new Date()} onConfirm={onConfirmDate} setOpen={setOpen} open={open} />
             </HStack>
             <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
-              Please select your location and destination root!
+              Please select journey date!
             </FormControl.ErrorMessage>
           </FormControl>
 
-          <FormControl isRequired>
-            <Select accessibilityLabel="Select Start Time" placeholder="Select Start Time" _selectedItem={{
-            bg: "theme.300",
-            endIcon: <CheckIcon size={5} />
-          }} mt="1">
-              <Select.Item label="BAUET To Rajshahi" value="bauetToRaj" />
-              <Select.Item label="Rajshahi - BAUET" value="RajToBauet" />
-              <Select.Item label="BAUET to Natore" value="bauetToNatore" />
-            </Select>
-            <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
-              Please select your location and destination root!
-            </FormControl.ErrorMessage>
-          </FormControl>
+          {
+            routes.length > 0 && (
+              <FormControl isRequired>
+                <Select accessibilityLabel="Select Available Root" onValueChange={(value) => { changeRoute(value); }} onC placeholder="Select Available Root" _selectedItem={{
+                bg: "theme.300",
+                endIcon: <CheckIcon size={5} />
+              }} mt="1">
+                {
+                  routes.map((r,i) => {
+                    let label = `${r.from} to ${r.to}`;
+                    return (
+                      <Select.Item key={r.id} label={label} value={r.id} />
+                    )
+                  })
+                }
+                </Select>
+                <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
+                  Please select location and destination root!
+                </FormControl.ErrorMessage>
+              </FormControl>
+            )
+          }
+        
+          {
+            trips.length > 0 && (
+              <Stack my={4} w={'100%'}>
+                <Heading my={3} size="sm">Available bus:</Heading>
+                {
+                  trips.map((trip,index) => {
+                    let busRoute = trip.routes.filter((br) => {
+                      return br.id = selectedRouteId;
+                    })
+                    return (
+                      <Box key={index} mb={2} alignItems="center">
+                          <Box w={'100%'} rounded="lg" overflow="hidden" borderColor="coolGray.200" borderWidth="1" _dark={{
+                              borderColor: "coolGray.600",
+                              backgroundColor: "gray.700"
+                            }} _web={{
+                              shadow: 2,
+                              borderWidth: 0
+                            }} _light={{
+                              backgroundColor: "gray.50"
+                            }}>
+                              <Stack p={3} space={3}>
+                                <Stack space={2}>
+                                  <Heading color={'theme.600'} size="xs">{trip.bus_name}</Heading>
+                                  {
+                                    busRoute.length > 0 && (
+                                      <HStack flexWrap={'wrap'}>
+                                        <Badge w={'40%'} colorScheme="warning">{`${busRoute[0].from }- ${busRoute[0].to}`}</Badge>
+                                        <Badge w={'33%'} colorScheme="info">{`Fares: ${busRoute[0].fares} Tk.`}</Badge>
+                                        <Badge colorScheme="coolGray">{trip.date}</Badge>
+                                      </HStack>
+                                    )
+                                  }
+                                  <HStack justifyContent={'space-between'}>
+                                    <Text fontSize="xs" _light={{
+                                        color: "violet.500"
+                                      }} _dark={{
+                                        color: "violet.400"
+                                      }} fontWeight="500" ml={1}>
+                                      Available Seats: 23
+                                    </Text>
+                                    <Button size={'xs'} ml={3}>Book Now</Button>
+                                  </HStack>
+                                  
+                                </Stack>
+                              </Stack>
+                          </Box>
+                        </Box>
+                        );
+                      })
+                    }
+              </Stack>
+            )
+          }
 
-          <View style={{width: '100%'}} alignItems={'center'} py={5}>
+          {
+            (trips.length < 1 && !searchLoading) && (
+              <Heading w={'100%'} py={10} textAlign={'center'} color={'warning.600'} size="sm">No bus available!</Heading>
+            )
+          }
+
+          {
+            searchLoading && (
+              <HStack mt={4} space={2} justifyContent="center">
+                <Spinner accessibilityLabel="Loading posts" />
+                <Heading color="primary.500" fontSize="md">
+                  Searching available buses...
+                </Heading>
+              </HStack>
+            )
+          }
+        
+          
+
+
+          {/* <View style={{width: '100%'}} alignItems={'center'} py={5}>
             <Button onPress={() => navigation.navigate('seatBooking')} backgroundColor={'theme.500'}>Submit</Button>
-          </View>
+          </View> */}
           
       </Container>
     </View>
