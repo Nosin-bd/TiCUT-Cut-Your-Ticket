@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { StyleSheet, Dimensions } from 'react-native';
-import { Image, Heading, Container, CheckIcon, FormControl, Select, WarningOutlineIcon, Button, View, Stack, Box,Text, HStack, Spinner, Input, Badge} from 'native-base';
+import { Image, Heading, CheckIcon, FormControl, Select, WarningOutlineIcon, Button,ScrollView, View, Stack, Box,Text, HStack, Spinner, Input, Badge} from 'native-base';
 // @ts-ignore
 import busImg from '../assets/images/Transport.jpg';
 import { useState } from 'react';
@@ -9,14 +9,18 @@ import { useNavigation } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
 import moment from 'moment';
 import { useToast } from 'native-base';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const win = Dimensions.get('window');
   const [trips, setTrips] = useState([]);
   const [date, setDate] = useState('');
   const [open, setOpen] = useState(false);
-  const [routes, setRoutes] = useState(false);
+  const [routes, setRoutes] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchInit, setSearchInit] = useState(false);
+  const [routeInit, setRouteInit] = useState(false);
+  const [dateInit, setDateInit] = useState(false);
   const [selectedRouteId, setSelectedRouteId] = useState('');
 
   const toast = useToast();
@@ -30,7 +34,6 @@ export default function HomeScreen() {
       snapshot.forEach((doc) => {
           data.push(doc);
       });
-
       setRoutes(data);
     }
 
@@ -41,16 +44,24 @@ export default function HomeScreen() {
     setOpen(false);
     const formatDate = moment(d).format("DD-MM-YYYY");
     setDate(formatDate);
-    selectedRouteId.length ? fetchTrips(selectedRouteId, formatDate) : toast.show({description: "Please select journey route!"});
+    setDateInit(true);
+    if(routeInit){
+      selectedRouteId.length ? fetchTrips(selectedRouteId, formatDate) : toast.show({description: "Please select journey route!"});
+    }else if(selectedRouteId.length > 1){
+      fetchTrips(selectedRouteId, formatDate)
+    }
   }
 
   const changeRoute = (val) => {
     setSelectedRouteId(val);
-    date.length > 1 ? fetchTrips(val, date) : toast.show({description: "Please select journey date!"}); 
+    setRouteInit(true);
+    date.length > 1 ? fetchTrips(val, date) : toast.show({description: "Please select journey date!"});
+     
   }
 
   async function fetchTrips(routeId, currentDate) {
       setSearchLoading(true);
+      setSearchInit(true);
       setTrips([]);
       const querySnapshot = await firestore().collection("trips").where('date', '==', currentDate).get();
       var snapshot = querySnapshot.docs.reduce(function(filtered, trip) {
@@ -71,133 +82,138 @@ export default function HomeScreen() {
 
 
   return (
-    <View style={styles.container}>
-      <Image source={busImg} alt="Transport Image" style={{
-          width: win.width,
-          height: 200,
-        }} />
-      <Heading py={3} mt={2} color={'theme.500'}>Book Your Ticket</Heading>
-      <Container w={"95%"}>
-          <FormControl isRequired py={3}>
-            <HStack>
-              <Input flex={1} placeholder="Select Journey Date" value={date} isDisabled={true} />
-              <Button variant={'outline'} size={'sm'} colorScheme='amber' onPress={() => setOpen(true)}  >Select date</Button>
-              <DatesPicker date={new Date()} onConfirm={onConfirmDate} setOpen={setOpen} open={open} />
-            </HStack>
-            <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
-              Please select journey date!
-            </FormControl.ErrorMessage>
-          </FormControl>
-
-          {
-            routes.length > 0 && (
-              <FormControl isRequired>
-                <Select accessibilityLabel="Select Available Root" onValueChange={(value) => { changeRoute(value); }} onC placeholder="Select Available Root" _selectedItem={{
-                bg: "theme.300",
-                endIcon: <CheckIcon size={5} />
-              }} mt="1">
-                {
-                  routes.map((r,i) => {
-                    let label = `${r.from} to ${r.to}`;
-                    return (
-                      <Select.Item key={r.id} label={label} value={r.id} />
-                    )
-                  })
-                }
-                </Select>
-                <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
-                  Please select location and destination root!
-                </FormControl.ErrorMessage>
-              </FormControl>
-            )
-          }
-        
-          {
-            trips.length > 0 && (
-              <Stack my={4} w={'100%'}>
-                <Heading my={3} size="sm">Available bus:</Heading>
-                {
-                  trips.map((trip,index) => {
-                    let busRoute = trip.routes.filter((br) => {
-                      return br.id = selectedRouteId;
-                    })
-                    return (
-                      <Box key={index} mb={2} alignItems="center">
-                          <Box w={'100%'} rounded="lg" overflow="hidden" borderColor="coolGray.200" borderWidth="1" _dark={{
-                              borderColor: "coolGray.600",
-                              backgroundColor: "gray.700"
-                            }} _web={{
-                              shadow: 2,
-                              borderWidth: 0
-                            }} _light={{
-                              backgroundColor: "gray.50"
-                            }}>
-                              <Stack p={3} space={3}>
-                                <Stack space={2}>
-                                  <Heading color={'theme.600'} size="xs">{trip.bus_name}</Heading>
-                                  {
-                                    busRoute.length > 0 && (
-                                      <HStack flexWrap={'wrap'}>
-                                        <Badge w={'40%'} colorScheme="warning">{`${busRoute[0].from }- ${busRoute[0].to}`}</Badge>
-                                        <Badge w={'33%'} colorScheme="info">{`Fares: ${busRoute[0].fares} Tk.`}</Badge>
-                                        <Badge colorScheme="coolGray">{trip.date}</Badge>
-                                      </HStack>
-                                    )
-                                  }
-                                  <HStack justifyContent={'space-between'}>
-                                    <Text fontSize="xs" _light={{
-                                        color: "violet.500"
-                                      }} _dark={{
-                                        color: "violet.400"
-                                      }} fontWeight="500" ml={1}>
-                                      Available Seats: 23
-                                    </Text>
-                                    <Button size={'xs'} ml={3}>Book Now</Button>
-                                  </HStack>
-                                  
-                                </Stack>
-                              </Stack>
-                          </Box>
-                        </Box>
-                        );
-                      })
-                    }
-              </Stack>
-            )
-          }
-
-          {
-            (trips.length < 1 && !searchLoading) && (
-              <Heading w={'100%'} py={10} textAlign={'center'} color={'warning.600'} size="sm">No bus available!</Heading>
-            )
-          }
-
-          {
-            searchLoading && (
-              <HStack mt={4} space={2} justifyContent="center">
-                <Spinner accessibilityLabel="Loading posts" />
-                <Heading color="primary.500" fontSize="md">
-                  Searching available buses...
-                </Heading>
+    <SafeAreaView>
+        <ScrollView style={homeStyles.container} h={'100%'} w={'100%'}>
+        <Image source={busImg} alt="Transport Image" style={{
+            width: win.width,
+            height: 200,
+          }} />
+        <Heading pl={6} py={3} mt={2} color={'theme.500'}>Book Your Ticket</Heading>
+        <Stack px={6} pb={6} alignContent={'center'}>
+            <FormControl isRequired py={3}>
+              <HStack>
+                <Input flex={1} placeholder="Select Journey Date" value={date} isDisabled={true} />
+                <Button variant={'outline'} size={'sm'} colorScheme='amber' onPress={() => setOpen(true)}  >Select date</Button>
+                <DatesPicker date={new Date()} onConfirm={onConfirmDate} setOpen={setOpen} open={open} />
               </HStack>
-            )
-          }
-        
-          
+              <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
+                Please select journey date!
+              </FormControl.ErrorMessage>
+            </FormControl>
 
-
-          {/* <View style={{width: '100%'}} alignItems={'center'} py={5}>
-            <Button onPress={() => navigation.navigate('seatBooking')} backgroundColor={'theme.500'}>Submit</Button>
-          </View> */}
+            {
+              routes.length > 0 && (
+                <FormControl isRequired>
+                  <Select accessibilityLabel="Select Available Root" onValueChange={(value) => { changeRoute(value); }} onC placeholder="Select Available Root" _selectedItem={{
+                  bg: "theme.300",
+                  endIcon: <CheckIcon size={5} />
+                }} mt="1">
+                  {
+                    routes.map((r,i) => {
+                      let label = `${r.from} to ${r.to}`;
+                      return (
+                        <Select.Item key={r.id} label={label} value={r.id} />
+                      )
+                    })
+                  }
+                  </Select>
+                  <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
+                    Please select location and destination root!
+                  </FormControl.ErrorMessage>
+                </FormControl>
+              )
+            }
           
-      </Container>
-    </View>
+            {
+              trips.length > 0 && (
+                <Stack my={4} w={'100%'}>
+                  <Heading my={3} size="sm">Available bus:</Heading>
+                  {
+                    trips.map((trip,index) => {
+                      let busRoute = trip.routes.filter((br) => {
+                        return br.id = selectedRouteId;
+                      })
+                      return (
+                        <Box key={index} mb={2} alignItems="center">
+                            <Box w={'100%'} rounded="lg" overflow="hidden" borderColor="coolGray.200" borderWidth="1" _dark={{
+                                borderColor: "coolGray.600",
+                                backgroundColor: "gray.700"
+                              }} _web={{
+                                shadow: 2,
+                                borderWidth: 0
+                              }} _light={{
+                                backgroundColor: "gray.50"
+                              }}>
+                                <Stack p={3} space={3}>
+                                  <Stack space={2}>
+                                    <Heading color={'theme.600'} size="xs">{trip.bus_name}</Heading>
+                                    {
+                                      busRoute.length > 0 && (
+                                        <HStack flexWrap={'wrap'}>
+                                          <Badge w={'40%'} colorScheme="warning">{`${busRoute[0].from }- ${busRoute[0].to}`}</Badge>
+                                          <Badge w={'33%'} colorScheme="info">{`Fares: ${busRoute[0].fares} Tk.`}</Badge>
+                                          <Badge colorScheme="coolGray">{`${trip.date}`}</Badge>
+                                          <Badge colorScheme="success">{`Departure time : ${trip.start_time}`}</Badge>
+                                          <Badge colorScheme={'danger'}>Available seats: 23</Badge>
+                                        </HStack>
+                                      )
+                                    }
+                                    <HStack justifyContent={'flex-end'}>
+                                      <Button size={'xs'} ml={3} onPress={() => {
+                                          navigation.navigate('seatBooking', {
+                                            tripId: trip.id,
+                                            routeId: selectedRouteId
+                                          });
+                                        }}>Book Now</Button>
+                                    </HStack>
+                                    
+                                  </Stack>
+                                </Stack>
+                            </Box>
+                          </Box>
+                          );
+                        })
+                      }
+                </Stack>
+              )
+            }
+
+            {
+              (trips.length < 1 && !searchLoading && searchInit) && (
+                <Heading w={'100%'} py={10} textAlign={'center'} color={'warning.600'} size="sm">No bus available!</Heading>
+              )
+            }
+
+            {
+              searchLoading && (
+                <HStack mt={4} space={2} justifyContent="center">
+                  <Spinner accessibilityLabel="Loading posts" />
+                  <Heading color="primary.500" fontSize="md">
+                    Searching available buses...
+                  </Heading>
+                </HStack>
+              )
+            }
+
+            {
+              routes.length < 1 && (
+                <HStack mt={4} space={2} justifyContent="center">
+                  <Spinner accessibilityLabel="Loading posts" />
+                  <Heading color="primary.500" fontSize="md">
+                    Searching available routes...
+                  </Heading>
+                </HStack>
+              )
+            }
+            
+          </Stack>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const homeStyles = StyleSheet.create({
   container: {
-    alignItems: 'center',
     backgroundColor: '#f5f5f1'
   },
   text: {

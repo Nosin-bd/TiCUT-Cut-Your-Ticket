@@ -6,46 +6,9 @@ import { useToast } from 'native-base';
 import firestore from '@react-native-firebase/firestore';
 
 export const DefaultSeatScreen = () => {
-    // const allSeats = [
-    //     {name: 'A1', disabled: false, visible: true },
-    //     {name: 'A2', disabled: false, visible: true },
-    //     {name: 'A3', disabled: false, visible: true },
-    //     {name: 'A4', disabled: false, visible: true },
-    //     {name: 'B1', disabled: false, visible: true },
-    //     {name: 'B2', disabled: false, visible: true },
-    //     {name: 'B3', disabled: false, visible: true },
-    //     {name: 'B4', disabled: false, visible: true },
-    //     {name: 'C1', disabled: false, visible: true },
-    //     {name: 'C2', disabled: false, visible: true },
-    //     {name: 'C3', disabled: false, visible: true },
-    //     {name: 'C4', disabled: false, visible: true },
-    //     {name: 'D1', disabled: false, visible: true },
-    //     {name: 'D2', disabled: false, visible: true },
-    //     {name: 'D3', disabled: false, visible: true },
-    //     {name: 'D4', disabled: false, visible: true },
-    //     {name: 'E1', disabled: false, visible: true },
-    //     {name: 'E2', disabled: false, visible: true },
-    //     {name: 'E3', disabled: false, visible: true },
-    //     {name: 'E4', disabled: false, visible: true },
-    //     {name: 'F1', disabled: false, visible: true },
-    //     {name: 'F2', disabled: false, visible: true },
-    //     {name: 'F3', disabled: false, visible: true },
-    //     {name: 'F4', disabled: false, visible: true },
-    //     {name: 'G1', disabled: false, visible: true },
-    //     {name: 'G2', disabled: false, visible: true },
-    //     {name: 'G3', disabled: false, visible: true },
-    //     {name: 'G4', disabled: false, visible: true },
-    //     {name: 'H1', disabled: false, visible: true },
-    //     {name: 'H2', disabled: false, visible: true },
-    //     {name: 'H3', disabled: false, visible: true },
-    //     {name: 'H4', disabled: false, visible: true },
-    //     {name: 'I1', disabled: false, visible: true },
-    //     {name: 'I2', disabled: false, visible: true },
-    //     {name: 'I3', disabled: false, visible: true },
-    //     {name: 'I4', disabled: false, visible: true }
-    // ];
 
     const [seats, setSeats] = useState([]);
+    const [defaultSeats, setDefaultSeats] = useState([]);
     const [showModal, setShowModal] = useState(false);
 
     const toast = useToast();
@@ -65,8 +28,12 @@ export const DefaultSeatScreen = () => {
     }
 
     const handleSubmit = ()=> {
+        fetchSeats();
         setValidation(true);
-        if( newSeat.name.length ){
+        let check = defaultSeats.some((s) => {
+            return s.name == newSeat.name;
+        })
+        if( newSeat.name.length && !check ){
             setLoading(true);
             firestore()
             .collection('default_seats')
@@ -80,8 +47,15 @@ export const DefaultSeatScreen = () => {
                 fetchSeats();
                 setLoading(false);
                 setShowModal(false);
+                setNewSeat({
+                    name: '',
+                    disabled: false,
+                    visible: true
+                });
                 toast.show({description: "Seat added successfully!"});
             });
+        }else{
+            toast.show({description: "You must need to add an unique seat Name!"});
         }
     }
 
@@ -91,6 +65,7 @@ export const DefaultSeatScreen = () => {
         querySnapshot.forEach((doc) => {
             data.push(doc.data());
         });
+        setDefaultSeats(data);
         let map_seat = [];
         let temp = [];
         data.forEach((s, i) => {
@@ -105,7 +80,6 @@ export const DefaultSeatScreen = () => {
                 temp= [];
             }
         })
-        console.log('map seat', map_seat);
         setSeats(map_seat);
     }
 
