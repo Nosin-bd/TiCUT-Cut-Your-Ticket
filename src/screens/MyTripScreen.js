@@ -282,7 +282,7 @@ export default function MyTripScreen() {
         })
     
 
-    alert(file.filePath);
+    alert(filePath);
   }
 
   

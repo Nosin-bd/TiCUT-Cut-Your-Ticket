@@ -16,6 +16,7 @@ export default function BookingScreen() {
   const navigation = useNavigation();
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchRoutes() {
       const data = []
       const querySnapshot = await firestore().collection("bookings").get();
@@ -23,16 +24,17 @@ export default function BookingScreen() {
       snapshot.forEach((doc) => {
           data.push(doc);
       });
-      setTrips(data);
-      setSearchLoading(false);
+      if(isMounted){
+        setTrips(data);
+        setSearchLoading(false);
+      }
     }
 
     fetchRoutes();
     return () => {
-      setTrips([]),
-      setSearchLoading(true)
+      isMounted = false;
     }
-  }, []);
+  }, [trips,searchLoading]);
 
   
   return (
@@ -99,7 +101,7 @@ export default function BookingScreen() {
                 <HStack mt={4} space={2} justifyContent="center">
                   <Spinner accessibilityLabel="Loading posts" />
                   <Heading color="primary.500" fontSize="md">
-                    Searching trips...
+                    Searching bookings...
                   </Heading>
                 </HStack>
               )

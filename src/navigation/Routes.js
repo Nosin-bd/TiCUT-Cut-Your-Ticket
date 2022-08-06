@@ -36,7 +36,6 @@ export default function Routes() {
 
   // Handle user state changes
   function onAuthStateChanged(u) {
-    console.log('id', u);
     setUser(u);
     if(u && u.emailVerified){
       getUser(u.uid);

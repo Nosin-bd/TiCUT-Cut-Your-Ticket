@@ -24,7 +24,7 @@ export const ViewRouteScreen = () => {
     return () => {
       isMounted = false;
     }
-  }, []);
+  }, [routes]);
 
   return (
     <SafeAreaView>

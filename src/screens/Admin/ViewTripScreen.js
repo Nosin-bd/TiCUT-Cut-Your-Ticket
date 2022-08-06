@@ -26,11 +26,9 @@ export const ViewTripScreen = () => {
 
     fetchTrips();
     return () => {
-      setTrips([]);
-      setSearchLoading(true);
       isMounted = false
     }
-  }, []);
+  }, [trips, searchLoading]);
 
   
   return (
