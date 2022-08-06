@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CheckBox from '@react-native-community/checkbox';
-import { FormControl, Input, Stack, WarningOutlineIcon, Box, ScrollView, Button, View, HStack, Switch, Text, Badge, Modal } from 'native-base';
+import { FormControl, Input, Stack, WarningOutlineIcon, Box, ScrollView, Button, View, HStack, Switch, Text, Modal } from 'native-base';
 import styles from '../../utils/styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useToast } from 'native-base';
@@ -31,6 +31,7 @@ export const AddTripScreen = () => {
     const [showModal, setShowModal] = useState(false);
 
     useEffect(() => {
+      let isMounted = true;
       async function fetchRoutes() {
         const data = []
         const querySnapshot = await firestore().collection("routes").get();
@@ -38,8 +39,9 @@ export const AddTripScreen = () => {
         snapshot.forEach((doc) => {
             data.push(doc);
         });
-  
-        setDefaultRoutes(data);
+        if(isMounted){
+          setDefaultRoutes(data);
+        }
       }
 
       async function fetchSeats() {
@@ -55,11 +57,16 @@ export const AddTripScreen = () => {
             booked: false
           }
         })
-        setDefaultSeats(finalSeats);
+        if(isMounted){
+          setDefaultSeats(finalSeats);
+        }
       }
   
       fetchRoutes();
       fetchSeats();
+      return () => {
+        isMounted = false;
+      }
     }, []);
 
     const updateInput = (name, value) => {
@@ -82,7 +89,8 @@ export const AddTripScreen = () => {
           start_time: time,
           routes: routes,
           seats: defaultSeats,
-          status: trip.status
+          status: trip.status,
+          date_time: new Date().getTime()
         }
         setValidation(true);
         if( (formData.date != '' || formData.date != undefined) && formData.start_time.length && formData.routes.length && formData.seats.length && formData.bus_name.length ){

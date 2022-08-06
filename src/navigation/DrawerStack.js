@@ -5,6 +5,8 @@ import { createDrawerNavigator, DrawerContentScrollView,
   DrawerItemList, DrawerItem } from '@react-navigation/drawer';
 import HomeScreen from '../screens/HomeScreen';
 import { AuthContext } from './AuthProvider';
+import MyTripScreen from '../screens/MyTripScreen';
+import colorConfig from '../utils/colorConfig';
 
 
 function NotificationsScreen({ navigation }) {
@@ -33,12 +35,13 @@ function CustomDrawerContent(props) {
 }
 
 const Drawer = createDrawerNavigator();
+const HeaderColor = colorConfig.headerColor;
 
 export default function DrawerStack() {
   return (
-    <Drawer.Navigator initialRouteName="Home" screenOptions={{ headerStyle: { backgroundColor: '#FD5602' }, headerTintColor: '#fff' }} drawerContent={props => <CustomDrawerContent {...props} />} >
+    <Drawer.Navigator initialRouteName="Home" screenOptions={{ headerStyle: { backgroundColor: HeaderColor }, headerTintColor: '#fff' }} drawerContent={props => <CustomDrawerContent {...props} />} >
         <Drawer.Screen name="Home" component={HomeScreen} />
-        <Drawer.Screen name="Notifications" component={NotificationsScreen} />
+        <Drawer.Screen name="MyTrip" component={MyTripScreen} />
     </Drawer.Navigator>
   );
 }

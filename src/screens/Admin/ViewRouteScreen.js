@@ -9,17 +9,21 @@ export const ViewRouteScreen = () => {
   const [routes, setRoutes] = useState([]);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchRoutes() {
       const data = []
       const querySnapshot = await firestore().collection("routes").get();
       querySnapshot.forEach((doc) => {
           data.push(doc.data());
       });
-
-      setRoutes(data);
+      if(isMounted){
+        setRoutes(data);
+      }
     }
-
     fetchRoutes();
+    return () => {
+      isMounted = false;
+    }
   }, []);
 
   return (

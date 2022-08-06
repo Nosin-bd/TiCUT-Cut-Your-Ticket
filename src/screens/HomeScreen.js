@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Dimensions } from 'react-native';
 import { Image, Heading, CheckIcon, FormControl, Select, WarningOutlineIcon, Button,ScrollView, View, Stack, Box,Text, HStack, Spinner, Input, Badge} from 'native-base';
 // @ts-ignore
@@ -36,8 +36,18 @@ export default function HomeScreen() {
       });
       setRoutes(data);
     }
-
     fetchRoutes();
+    return () => {
+      setTrips([]),
+      setDate(''),
+      setOpen(false),
+      setRoutes([]),
+      setSearchLoading(false),
+      setSearchInit(false),
+      setRouteInit(false),
+      setDateInit(false),
+      setSelectedRouteId('')
+    }
   }, []);
 
   const onConfirmDate = (d) => {
@@ -93,7 +103,7 @@ export default function HomeScreen() {
             <FormControl isRequired py={3}>
               <HStack>
                 <Input flex={1} placeholder="Select Journey Date" value={date} isDisabled={true} />
-                <Button variant={'outline'} size={'sm'} colorScheme='amber' onPress={() => setOpen(true)}  >Select date</Button>
+                <Button variant={'outline'} size={'sm'} color={'theme.button'} onPress={() => setOpen(true)}  >Select date</Button>
                 <DatesPicker date={new Date()} onConfirm={onConfirmDate} setOpen={setOpen} open={open} />
               </HStack>
               <FormControl.ErrorMessage leftIcon={<WarningOutlineIcon size="xs" />}>
@@ -104,7 +114,7 @@ export default function HomeScreen() {
             {
               routes.length > 0 && (
                 <FormControl isRequired>
-                  <Select accessibilityLabel="Select Available Root" onValueChange={(value) => { changeRoute(value); }} onC placeholder="Select Available Root" _selectedItem={{
+                  <Select color={'gray.500'} accessibilityLabel="Select Available Root" onValueChange={(value) => { changeRoute(value); }} onC placeholder="Select Available Root" _selectedItem={{
                   bg: "theme.300",
                   endIcon: <CheckIcon size={5} />
                 }} mt="1">
@@ -112,7 +122,7 @@ export default function HomeScreen() {
                     routes.map((r,i) => {
                       let label = `${r.from} to ${r.to}`;
                       return (
-                        <Select.Item key={r.id} label={label} value={r.id} />
+                        <Select.Item color={'gray.100'} key={r.id} label={label} value={r.id} />
                       )
                     })
                   }
@@ -127,11 +137,14 @@ export default function HomeScreen() {
             {
               trips.length > 0 && (
                 <Stack my={4} w={'100%'}>
-                  <Heading my={3} size="sm">Available bus:</Heading>
+                  <Heading my={3} color={'theme.600'} size="sm">Available bus:</Heading>
                   {
                     trips.map((trip,index) => {
                       let busRoute = trip.routes.filter((br) => {
                         return br.id = selectedRouteId;
+                      })
+                      let availableSeat = trip.seats.filter((s) => {
+                        return s.booked == false;
                       })
                       return (
                         <Box key={index} mb={2} alignItems="center">
@@ -146,20 +159,20 @@ export default function HomeScreen() {
                               }}>
                                 <Stack p={3} space={3}>
                                   <Stack space={2}>
-                                    <Heading color={'theme.600'} size="xs">{trip.bus_name}</Heading>
+                                    <Heading color={'black'} size="xs">{trip.bus_name}</Heading>
                                     {
                                       busRoute.length > 0 && (
                                         <HStack flexWrap={'wrap'}>
-                                          <Badge w={'40%'} colorScheme="warning">{`${busRoute[0].from }- ${busRoute[0].to}`}</Badge>
-                                          <Badge w={'33%'} colorScheme="info">{`Fares: ${busRoute[0].fares} Tk.`}</Badge>
-                                          <Badge colorScheme="coolGray">{`${trip.date}`}</Badge>
-                                          <Badge colorScheme="success">{`Departure time : ${trip.start_time}`}</Badge>
-                                          <Badge colorScheme={'danger'}>Available seats: 23</Badge>
+                                          <Badge w={'55%'} bg="theme.third"><Text>{`${busRoute[0].from }- ${busRoute[0].to}`}</Text></Badge>
+                                          <Badge w={'45%'} bg="theme.third"><Text>{`Fares: ${busRoute[0].fares} Tk.`}</Text></Badge>
+                                          <Badge w={'100%'} bg="theme.third"><Text>{`Departure date: ${trip.date}`}</Text></Badge>
+                                          <Badge w={'50%'} bg="theme.third"><Text>{`Time : ${trip.start_time}`}</Text></Badge>
+                                          <Badge w={'50%'} bg={'theme.third'}><Text>Available seats: {availableSeat.length}</Text></Badge>
                                         </HStack>
                                       )
                                     }
                                     <HStack justifyContent={'flex-end'}>
-                                      <Button size={'xs'} ml={3} onPress={() => {
+                                      <Button size={'xs'} bg={'theme.button'} ml={3} onPress={() => {
                                           navigation.navigate('seatBooking', {
                                             tripId: trip.id,
                                             routeId: selectedRouteId

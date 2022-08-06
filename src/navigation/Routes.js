@@ -5,11 +5,13 @@ import AuthStack from './AuthStack';
 import { AuthContext } from './AuthProvider';
 import Loading from '../components/Loading';
 import HomeStack from './HomeStack';
-import AdminStack from './AdminStack';
 import firestore from '@react-native-firebase/firestore';
+import { BookingProvider } from '../providers/BookingProvider';
+import {HStack, Spinner, Heading} from 'native-base';
+import AdminHomeStack from './AdminHomeStack';
 
 export default function Routes() {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, setUser, userLoading } = useContext(AuthContext);
   const { userDetails, setUserDetails } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
@@ -36,7 +38,7 @@ export default function Routes() {
   function onAuthStateChanged(u) {
     console.log('id', u);
     setUser(u);
-    if(u){
+    if(u && u.emailVerified){
       getUser(u.uid);
     }else{
       if (initializing) setInitializing(false);
@@ -54,8 +56,31 @@ export default function Routes() {
   }
 
   return (
-    <NavigationContainer>
-      { user && userDetails ? ( userDetails.isAdmin  ? <AdminStack /> : <HomeStack /> ) : <AuthStack /> }
-    </NavigationContainer>
+    <>
+      {
+        !user && !userDetails && userLoading && (
+          <HStack space={2} justifyContent="center">
+            <Spinner accessibilityLabel="Fetching user..." />
+            <Heading color="primary.500" fontSize="md">
+              Fetching user...
+            </Heading>
+          </HStack>
+        )
+      }
+      {
+        user && userDetails ? (
+          <NavigationContainer>
+            {
+              userDetails.isAdmin  ? <AdminHomeStack /> : <BookingProvider><HomeStack /></BookingProvider>
+            }
+          </NavigationContainer>
+        ) : (
+          <NavigationContainer>
+            <AuthStack />
+          </NavigationContainer>
+        )
+      }
+    </>
+    
   );
 }

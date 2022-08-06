@@ -3,7 +3,7 @@ import React from 'react'
 
 export const AdminHomeScreen = () => {
   return (
-    <View>
+    <View p={10}>
         <Heading>Welcome to Admin Dashboard</Heading>
     </View>
   )

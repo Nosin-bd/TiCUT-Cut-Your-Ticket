@@ -1,9 +1,12 @@
-import React, { useState, useContext, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import FormButton from '../components/FormButton';
+import React, { useState, useContext, useRef, useEffect } from 'react';
+import { Text, StyleSheet } from 'react-native';
+import { View } from 'native-base';
 import FormInput from '../components/FormInput';
 import { AuthContext } from '../navigation/AuthProvider';
 import PhoneInput from "react-native-phone-number-input";
+import { Button } from 'native-base';
+import { useToast } from 'native-base';
+import firestore from '@react-native-firebase/firestore';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -14,9 +17,50 @@ export default function SignupScreen() {
   const { register } = useContext(AuthContext);
   const phoneInput = useRef(null);
   const [formattedValue, setFormattedValue] = useState("");
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [records , setRecords] = useState([]);
+  const toast = useToast();
+
+  useEffect(() => {
+    async function fetchRecords() {
+      const data = []
+      const querySnapshot = await firestore().collection("records").get();
+      const snapshot = querySnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+      snapshot.forEach((doc) => {
+          data.push(doc);
+      });
+      setRecords(data);
+    }
+
+    fetchRecords();
+    return () => {
+      setRecords([])
+    }
+  }, []);
+
+  const makeRegister = async (email, password, name, phone, deptId) => {
+    if(email.length && password.length && name.length && phone.length && deptId.length){
+      setRegisterLoading(true);
+      let permitted = records.find((r) => r.email == email);
+      if(permitted){
+        await register(email, password, name, phone, deptId);
+        setRegisterLoading(false);
+        setEmail('');
+        setPassword('');
+        setName('');
+        setPhone('');
+        setDeptId('');
+      }else{
+        toast.show({description: "You are not able to use this app!"});
+        setRegisterLoading(false);
+      }
+    }else{
+      toast.show({description: "Please fill all the filled!"});
+    }
+  }
 
   return (
-    <View style={styles.container} w={'100%'}>
+    <View style={styles.container} px={10}>
       <Text style={styles.text}>Create an account</Text>
       <FormInput
         value={name}
@@ -34,17 +78,10 @@ export default function SignupScreen() {
         keyboardType='numeric'
         autoCorrect={false}
       />
-      {/* <FormInput
-        value={phone}
-        placeholderText='Phone'
-        onChangeText={userPhone => setPhone(userPhone)}
-        autoCapitalize='none'
-        keyboardType='numeric'
-        autoCorrect={false}
-      /> */}
 
       <View>
         <PhoneInput
+          containerStyle={{ borderColor: 'gray', borderWidth: 1, marginVertical: 4, borderRadius: 5}}
           ref={phoneInput}
           defaultValue={phone}
           defaultCode="BD"
@@ -73,10 +110,7 @@ export default function SignupScreen() {
         onChangeText={userPassword => setPassword(userPassword)}
         secureTextEntry={true}
       />
-      <FormButton
-        buttonTitle='Signup'
-        onPress={() => register(email, password, name, phone, deptId)}
-      />
+      <Button w={150} isLoading={registerLoading && records.length > 0} isLoadingText={'Register'} size={'lg'} onPress={() => makeRegister(email, password, name, phone, deptId)}>Register</Button>
     </View>
   );
 }

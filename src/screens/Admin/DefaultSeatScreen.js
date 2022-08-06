@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Stack, Heading,Box, Text, View, HStack, Button, Row, Modal, FormControl, Input, Switch } from 'native-base';
+import { ScrollView, View, HStack, Button, Row, Modal, FormControl, Input, Switch, Heading, Spinner } from 'native-base';
 import styles from '../../utils/styles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useToast } from 'native-base';
@@ -85,6 +85,10 @@ export const DefaultSeatScreen = () => {
 
     useEffect( () => {
         fetchSeats();
+        return () => {
+            setDefaultSeats([]);
+            setSeats([]);
+        }
     },[])
 
   return (
@@ -93,7 +97,7 @@ export const DefaultSeatScreen = () => {
             <View mb={6} alignItems={'center'}>
                 <Button onPress={() => setShowModal(true)} bg={'red.800'} w={160}> Add Seat </Button>
             </View>
-            <View alignItems={'center'}>
+            <View mb={6} alignItems={'center'}>
                 {
 
                     seats.map((seat,index) => {
@@ -112,6 +116,17 @@ export const DefaultSeatScreen = () => {
                     })
                 }
             </View>
+
+            {
+              seats.length < 1 && (
+                <HStack mt={4} space={2} justifyContent="center">
+                  <Spinner accessibilityLabel="Loading posts" />
+                  <Heading color="primary.500" fontSize="md">
+                    Searching seats...
+                  </Heading>
+                </HStack>
+              )
+            }
 
             
 
